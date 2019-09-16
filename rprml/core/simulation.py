@@ -62,8 +62,9 @@ class Simulation(object):
                 dampening=0, weight_decay=0, nesterov=False)
 
     # A dictionary of extra keyword arguments to be used when creating data
-    # loaders.
-    data_factory_extra_kwargs: dict = None
+    # loaders and model.
+    data_factory_kwargs: dict = None
+    model_factory_kwargs: dict = None
 
     __initialized = False
 
@@ -73,8 +74,10 @@ class Simulation(object):
         # Reset the seed before setting up the data and calling model factory.
         reset_all_seeds(self.seed)
 
-        if self.data_factory_extra_kwargs is None:
-            self.data_factory_extra_kwargs = {}
+        if self.data_factory_kwargs is None:
+            self.data_factory_kwargs = {}
+        if self.model_factory_kwargs is None:
+            self.model_factory_kwargs = {}
 
         # Set up the datasets.
         dataset_factory = self.data
@@ -83,10 +86,10 @@ class Simulation(object):
         self.train_dataset, self.valid_dataset = \
             dataset_factory(
                 n_train=self.n_train, n_valid=self.n_valid, device=self.device,
-                **self.data_factory_extra_kwargs)
+                **self.data_factory_kwargs)
 
         # Create model and move to device.
-        self.model = self.model_factory()
+        self.model = self.model_factory(**self.model_factory_kwargs)
         self.model.to(self.device)
 
         # Set up the optimizer.
