@@ -31,7 +31,8 @@ class _ExecutorBase(object):
             metrics will be tracked. If not specified (or -1) then uses the
             trining dataset size of the simulation object (i.e., one log per
             epoch).
-        :print_frequency: Display every print_frequency-th logged metric.
+        :print_frequency: Display every print_frequency-th logged metric. Value
+            -1 is reserved for disabling printing.
         """
         # First save a handle to the simulation object and register our custom
         # event handler, which fires after every log_frequency number of
@@ -109,11 +110,13 @@ class _ExecutorBase(object):
         # Show the output dict immediately as the training begins.
         @self.simulation.trainer.on(Events.STARTED)
         def display_output_dict_on_start(engine):
-            self.display_output_dict()
+            if self.print_frequency != -1:
+                self.display_output_dict()
         # Update the output dict after the training ends.
         @self.simulation.trainer.on(Events.COMPLETED)
         def display_output_dict_on_end(engine):
-            self.display_output_dict()
+            if self.print_frequency != -1:
+                self.display_output_dict()
 
     def run(self, epochs: int):
         """ Runs the trainer of the current simulation configuration for the
@@ -139,7 +142,8 @@ class _ExecutorBase(object):
             self._log_pbars.append(tqdm(
                 total=0, position=i + 1, bar_format='{desc}'))
 
-        self._register_display_handlers()
+        if self.print_frequency != -1:
+            self._register_display_handlers()
 
         try:
             simulation.trainer.run(simulation.train_dl, max_epochs=epochs)
@@ -164,6 +168,8 @@ class _ExecutorBase(object):
 
         # Define the display handlers.
         def display_output_dict_handler(engine):
+            if self.print_frequency == -1:
+                return
             if (len(self._output_dict['iter'])-1) % self.print_frequency == 0:
                 self.display_output_dict()
 
