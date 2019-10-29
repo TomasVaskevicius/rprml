@@ -15,8 +15,7 @@ def _job(simulation_factory, seed, device, log_frequency, epochs):
     simulation.executor.log_frequency = log_frequency
     simulation.executor.print_frequency = -1  # Disable printing.
     simulation.run(epochs)
-    simulation.model = None  # Do not send the model back.
-    return simulation
+    return (simulation.executor.history, seed, device)
 
 
 # Where the output files will be saved.
@@ -46,7 +45,8 @@ class Experiment(object):
     def construct_simulation_identifier(self, simulation):
         """ Default implementation of simulation identifier. Simulation
         identifiers will be used to retrieve the results. This class is
-        meant to be used by simulation objects of type core.Simulation."""
+        meant to be used by simulation objects of type core.Simulation.
+        Should be independent of the simulation output. """
         # Construct relevant keys, using field names of dataclass and its
         # subclasses recursively.
         identifier = {}
@@ -71,10 +71,10 @@ class Experiment(object):
 
         return HashableDict(identifier)
 
-    def handle_simulation_output(self, simulation):
+    def handle_simulation_output(self, simulation_history):
         """ Implements a default simulation output handler. Override for
         custom behavior. """
-        return simulation.executor.history
+        return simulation_history
 
     def prototype_run(self, seed: int, device: torch.device,
                       epochs_per_simulation: Union[int, List[int]]):
@@ -96,7 +96,7 @@ class Experiment(object):
             simulation.run(epochs)
             simulation_identifier = self.construct_simulation_identifier(
                 simulation)
-            result = self.handle_simulation_output(simulation)
+            result = self.handle_simulation_output(simulation.executor.history)
             results[simulation_identifier] = result
 
         return results
@@ -106,6 +106,8 @@ class Experiment(object):
         """ Runs the experiment with multiple seeds, distributing the
         simulations across different devices and saving the results to disk.
         """
+        if isinstance(epochs_per_simulation, int):
+            epochs_per_simulation = [epochs_per_simulation]
 
         multiprocessing.set_sharing_strategy('file_system')
         context = multiprocessing.get_context('spawn')
@@ -141,15 +143,18 @@ class Experiment(object):
             # Now process all the outputs to save only what we need.
             processed_outputs = []
             for simulation in all_outputs:
-                simulation_identifier = self.construct_simulation_identifier(
-                    simulation)
-                result = self.handle_simulation_output(simulation)
-                output_to_save = (simulation.seed, simulation.device,
-                                  simulation_identifier, result)
-                processed_outputs.append(output_to_save)
+                simulation_history, used_seed, used_device = \
+                    self.handle_simulation_output(simulation)
+                processed_output = self.handle_simulation_output(
+                    simulation_history)
+                processed_outputs.append(
+                    (processed_output, used_seed, used_device))
 
+            # We create a new simulation object to get an identifier.
+            simulation_identifier = self.construct_simulation_identifier(
+                simulation_factory(0, torch.device('cpu')))
             # Write processed_outputs to disk.
             file_path = _outputs_prefix + self.name + '/experiment_' + \
                 str(experiment_id)
-            save_to_disk(processed_outputs, file_path)
+            save_to_disk((simulation_identifier, processed_outputs), file_path)
             experiment_id += 1
