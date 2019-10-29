@@ -83,10 +83,21 @@ class Simulation(object):
         dataset_factory = self.data
         if type(self.data) is str:
             dataset_factory = dataset_factory_methods[self.data]
-        self.train_dataset, self.valid_dataset = \
+
+        datasets = \
             dataset_factory(
                 n_train=self.n_train, n_valid=self.n_valid, device=self.device,
                 **self.data_factory_kwargs)
+
+        if len(datasets) == 2:
+            # If dataset_factory has returned a tuple of 2 objects we have
+            # a train and valid datasets. Append None for test dataset.
+            datasets = (*datasets, None)
+
+        if len(datasets) != 3:
+            raise ValueError('Dataset factory has to return 2 or 3 datasets.')
+
+        self.train_dataset, self.valid_dataset, self.test_dataset = datasets
 
         # Create model and move to device.
         self.model = self.model_factory(**self.model_factory_kwargs)
@@ -114,10 +125,24 @@ class Simulation(object):
 
     def run(self, epochs: int):
         """ Runs the trainer for the given number of epochs. """
-        # Need to reset train and valid data loaders, for example, if the
+        # Need to reset the data loaders, for example, if the
         # batch size was changed, or if the dataset objects were modified.
         self.train_dl = DataLoader(self.train_dataset,
                                    batch_size=self.batch_size, shuffle=True)
         self.valid_dl = DataLoader(self.valid_dataset,
                                    batch_size=self.n_valid, shuffle=False)
+
+        # If test dataset exists, create a test data loader.
+        self.test_dl = None
+        if self.test_dataset is not None:
+            # Try to use the validation dataset size for evaluating test
+            # metrics.
+            test_batch_size = self.n_valid
+            if test_batch_size > len(self.test_dataset):
+                test_batch_size = len(self.test_dataset)
+            self.test_dl = DataLoader(self.test_dataset,
+                                      batch_size=test_batch_size,
+                                      shuffle=False)
+
+        # Run the simulation.
         self.executor.run(epochs)

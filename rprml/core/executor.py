@@ -234,6 +234,15 @@ def _compute_validation_loss(engine, executor):
     return evaluator.state.metrics['loss']
 
 
+def _compute_test_loss(engine, executor):
+    if executor.simulation.test_dl is None:
+        # Test dataset was not provided.
+        return None
+    evaluator = executor.simulation.evaluator
+    evaluator.run(executor.simulation.test_dl)
+    return evaluator.state.metrics['loss']
+
+
 def _compute_generalization_error(engine, executor):
     return executor._output_dict['valid_loss'][-1] - \
         executor._output_dict['train_loss'][-1]
@@ -256,6 +265,15 @@ def _compute_training_accuracy(engine, executor):
 def _compute_validation_accuracy(engine, executor):
     evaluator = executor.simulation.evaluator
     evaluator.run(executor.simulation.valid_dl)
+    return evaluator.state.metrics['accuracy']
+
+
+def _compute_test_accuracy(engine, executor):
+    if executor.simulation.test_dl is None:
+        # Test dataset was not provided.
+        return None
+    evaluator = executor.simulation.evaluator
+    evaluator.run(executor.simulation.test_dl)
     return evaluator.state.metrics['accuracy']
 
 
@@ -288,6 +306,11 @@ class Executor(_ExecutorBase):
         self.register_printable_metric(
             _compute_generalization_error, 'gen_error')
 
+        # Test accuracy should not be printed in the progress bars.
+        # We should use the test metrics as scarcely as possible.
+        self.register_not_printable_metric(_compute_test_loss,
+                                           'test_loss')
+
         self._optimal_validation_loss = np.finfo(np.float32).max
         self.register_not_printable_metric(
             _update_optimal_iteration, 'opt_iter')
@@ -305,6 +328,10 @@ class Executor(_ExecutorBase):
                                            'train_acc')
             self.register_printable_metric(_compute_validation_accuracy,
                                            'valid_acc')
+            # Test accuracy should not be printed in the progress bars.
+            # We should use the test metrics as scarcely as possible.
+            self.register_not_printable_metric(_compute_test_accuracy,
+                                               'test_acc')
             self.__accuracy_handlers_registered = True
 
     def display_output_dict(self):
