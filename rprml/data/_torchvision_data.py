@@ -6,38 +6,41 @@ from .data_utils import get_preloaded_tensor_dataset, split_by_count, data_path
 
 def __get_torchvision_datasets(dataset_class, transforms, n_train, n_valid,
                                device=torch.device('cpu')):
-    """ A helper for returining torchvisino datasets, split into training
-    and validation sets and preloaded as tensor datasets.
+    """ A helper for returining torchvisino datasets, split into training,
+    validation and test sets and preloaded as tensor datasets.
 
     :dataset_class: A class from torchvision.datasets.
     :transforms: Transforms to be performed on the data points.
     :n_train: Number of randomly selected data points for training.
     :n_valid: Number of randomly selected data_points for validation.
     :device: A torch.device specifying where the data should be loaded.
-    :returns: The requested torchvision training and validation datasets.
+    :returns: The requested torchvision train, valid and test datasets.
 
     """
 
-    full_dataset = dataset_class(download=True, root=data_path,
-                                 transform=transforms, train=True)
+    train_dataset_full = dataset_class(download=True, root=data_path,
+                                       transform=transforms, train=True)
+    test_dataset = dataset_class(download=True, root=data_path,
+                                 transform=transforms, train=False)
 
     train_dataset, valid_dataset = \
-        split_by_count(full_dataset, n_train, n_valid)
+        split_by_count(train_dataset_full, n_train, n_valid)
 
     train_dataset = get_preloaded_tensor_dataset(train_dataset, device)
     valid_dataset = get_preloaded_tensor_dataset(valid_dataset, device)
+    test_dataset = get_preloaded_tensor_dataset(test_dataset, device)
 
-    return train_dataset, valid_dataset
+    return train_dataset, valid_dataset, test_dataset
 
 
 def get_mnist_datasets(n_train, n_valid, device=torch.device('cpu')):
-    """ A function for getting MNIST training and validation dataloaders.
+    """ A function for getting MNIST training, validation and testing
+    datasets.
 
     :n_train: Number of randomly selected data points for training.
     :n_valid: Number of randomly selected data_points for validation.
     :device: A torch.device specifying where the data should be loaded.
-    :returns: A tuple of Dataset objects, one for training and one
-            for validation.
+    :returns: A tuple of Dataset objects, one for each split.
 
     """
 
@@ -48,14 +51,14 @@ def get_mnist_datasets(n_train, n_valid, device=torch.device('cpu')):
 
 
 def get_cifar10_datasets(n_train, n_valid, device=torch.device('cpu')):
-    """ A function for getting CIFAR10 training and validation dataloaders.
+    """ A function for getting CIFAR10 training, validation and testing
+    datasets.
 
     :n_train: Number of randomly selected data points for training.
     :n_valid: Number of randomly selected data_points for validation.
     :seed: A random seed for selecting subsets of data.
     :device: A torch.device specifying where the data should be loaded.
-    :returns: A tuple of Dataset objects, one for training and one
-            for validation.
+    :returns: A tuple of Dataset objects, one for each split.
 
     """
 
