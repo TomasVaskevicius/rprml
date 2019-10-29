@@ -133,39 +133,41 @@ class _ExecutorBase(object):
               ' with seed ' + str(simulation.seed) + ' for ' + str(epochs) +
               ' epochs.')
 
-        # Create a progress bar displaying the number of epochs.
-        self._pbar = tqdm(initial=0, total=epochs, position=0,
-                          unit='epoch')
-        # Create progress bars for logging.
-        self._log_pbars = []
-        for i in range(self._n_log_pbars):
-            self._log_pbars.append(tqdm(
-                total=0, position=i + 1, bar_format='{desc}'))
-
+        # Only create progress bar if printing is not disabled.
         if self.print_frequency != -1:
+            # Create a progress bar displaying the number of epochs.
+            self._pbar = tqdm(initial=0, total=epochs, position=0,
+                              unit='epoch')
+            # Create progress bars for logging.
+            self._log_pbars = []
+            for i in range(self._n_log_pbars):
+                self._log_pbars.append(tqdm(
+                    total=0, position=i + 1, bar_format='{desc}'))
+
             self._register_display_handlers()
 
         try:
             simulation.trainer.run(simulation.train_dl, max_epochs=epochs)
         except KeyboardInterrupt:
             # Clean up if interrupted.
+            if self.print_frequency != -1:
+                self._remove_display_handlers()
+                self._pbar.close()
+                for pbar in self._log_pbars:
+                    pbar.close()
+            raise
+
+        if self.print_frequency != -1:
             self._remove_display_handlers()
             self._pbar.close()
             for pbar in self._log_pbars:
                 pbar.close()
-            raise
-
-        self._remove_display_handlers()
-        self._pbar.close()
-        for pbar in self._log_pbars:
-            pbar.close()
 
     def _register_display_handlers(self):
         """ Registers handlers responsible for displaying the output.
         The purpose of this method is so that the display handlers are
         registered just before the training process begins, to make sure
         they are the last ones. """
-
         # Define the display handlers.
         def display_output_dict_handler(engine):
             if self.print_frequency == -1:
@@ -191,7 +193,6 @@ class _ExecutorBase(object):
         """ Removes the display handles. Called after training is finished.
         This allows to register custom handlers in between the calls to
         self.run(). """
-
         self.simulation.trainer.remove_event_handler(
             self._display_output_dict_handler, _iteration_level_event)
         self._display_output_dict_handler = None
