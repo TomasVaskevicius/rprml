@@ -3,9 +3,24 @@ from itertools import cycle
 import numbers
 from typing import List, Union
 import torch
+import torch.multiprocessing as multiprocessing
 
 from .simulation_factory import SimulationFactory
 from ..utils.hashable_dict import HashableDict
+from ..utils.io import save_to_disk
+
+
+def _job(simulation_factory, seed, device, log_frequency, epochs):
+    simulation = simulation_factory(seed, device)
+    simulation.executor.log_frequency = log_frequency
+    simulation.executor.print_frequency = -1  # Disable printing.
+    simulation.run(epochs)
+    simulation.model = None  # Do not send the model back.
+    return simulation
+
+
+# Where the output files will be saved.
+_outputs_prefix = './outputs/'
 
 
 class Experiment(object):
@@ -86,8 +101,55 @@ class Experiment(object):
 
         return results
 
-    def full_run(self, n_runs, devices_list):
+    def full_run(self, n_runs_per_device, n_processes_per_device,
+                 devices_list, epochs_per_simulation: Union[int, List[int]]):
         """ Runs the experiment with multiple seeds, distributing the
         simulations across different devices and saving the results to disk.
         """
-        raise NotImplementedError
+
+        multiprocessing.set_sharing_strategy('file_system')
+        context = multiprocessing.get_context('spawn')
+
+        experiment_id = 0
+        for simulation_factory, epochs in zip(self.simulation_factories,
+                                              cycle(epochs_per_simulation)):
+            # Create a pool for each device.
+            pools = []
+            for device in devices_list:
+                pools.append(context.Pool(processes=n_processes_per_device))
+
+            # For each pool execute jobs.
+            results = []
+            for pool_id, (pool, device) in enumerate(zip(pools, devices_list)):
+                args = []
+                for i in range(n_runs_per_device):
+                    args.append((
+                        simulation_factory,
+                        pool_id * n_runs_per_device + i,  # seed,
+                        device,
+                        self.log_frequency,
+                        epochs))
+                results.append(pool.starmap_async(_job, args))
+
+            # Save all runs of the current simulation configuration to disk.
+            all_outputs = []
+            for pool, result in zip(pools, results):
+                all_outputs += result.get()
+                pool.close()
+                pool.join()
+
+            # Now process all the outputs to save only what we need.
+            processed_outputs = []
+            for simulation in all_outputs:
+                simulation_identifier = self.construct_simulation_identifier(
+                    simulation)
+                result = self.handle_simulation_output(simulation)
+                output_to_save = (simulation.seed, simulation.device,
+                                  simulation_identifier, result)
+                processed_outputs.append(output_to_save)
+
+            # Write processed_outputs to disk.
+            file_path = _outputs_prefix + self.name + '/experiment_' + \
+                str(experiment_id)
+            save_to_disk(processed_outputs, file_path)
+            experiment_id += 1
