@@ -1,6 +1,6 @@
 import torch
 from dataclasses import dataclass
-from typing import Callable, Union
+from typing import Callable, Union, List
 from ignite.engine import Engine, create_supervised_evaluator
 from ignite.metrics import Loss
 from torch.utils.data.dataloader import DataLoader
@@ -45,6 +45,10 @@ class Simulation(object):
     batch_size: int
     _learning_rate: int
     simulation_name: str = 'Simulation'
+    custom_handlers: List[Callable] = None # Functions of the form
+                                           # simulation -> void
+                                           # to be called after everyting is
+                                           # set up.
     executor_class = Executor  # The default Executor to be used.
     # Can be changed upon instantiation of this class but not after.
 
@@ -118,6 +122,11 @@ class Simulation(object):
         reset_all_seeds(self.seed)
 
         self.executor = Executor(self)
+
+        # Call the custom handlers.
+        if self.custom_handlers is not None:
+            for handler in self.custom_handlers:
+                handler(self)
 
         # Mark instance as initialized to prohibit changing certain instance
         # variables.
