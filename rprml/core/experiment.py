@@ -143,8 +143,7 @@ class Experiment(object):
             # Now process all the outputs to save only what we need.
             processed_outputs = []
             for simulation in all_outputs:
-                simulation_history, used_seed, used_device = \
-                    self.handle_simulation_output(simulation)
+                simulation_history, used_seed, used_device = simulation
                 processed_output = self.handle_simulation_output(
                     simulation_history)
                 processed_outputs.append(
