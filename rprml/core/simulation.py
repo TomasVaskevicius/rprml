@@ -45,10 +45,10 @@ class Simulation(object):
     batch_size: int
     _learning_rate: int
     simulation_name: str = 'Simulation'
-    custom_handlers: List[Callable] = None # Functions of the form
-                                           # simulation -> void
-                                           # to be called after everyting is
-                                           # set up.
+    custom_handlers: List[Callable] = None  # Functions of the form
+    # simulation -> void
+    # to be called after everyting is
+    # set up.
     executor_class = Executor  # The default Executor to be used.
     # Can be changed upon instantiation of this class but not after.
 
@@ -60,10 +60,9 @@ class Simulation(object):
     def learning_rate(self, val):
         self._learning_rate = val
         if self.__initialized:
-            # Reset the optimizer with the new learning rate.
-            self.optimizer = torch.optim.SGD(
-                self.model.parameters(), self.learning_rate, momentum=0,
-                dampening=0, weight_decay=0, nesterov=False)
+            # Set the new learning rate.
+            for group in self.optimizer.param_groups:
+                group['lr'] = val
 
     # A dictionary of extra keyword arguments to be used when creating data
     # loaders and model.
