@@ -4,6 +4,7 @@ from typing import Callable, Union, List
 from ignite.engine import Engine, create_supervised_evaluator
 from ignite.metrics import Loss
 from torch.utils.data.dataloader import DataLoader
+from torch.optim.lr_scheduler import _LRScheduler
 
 from .executor import Executor
 from ..data.data import dataset_factory_methods
@@ -22,6 +23,8 @@ def _create_supervised_trainer(simulation):
         loss = simulation.loss_function(y_pred, y)
         loss.backward()
         simulation.optimizer.step()
+        if simulation.lr_scheduler is not None:
+            simulation.lr_scheduler.step()
         return loss.item()
 
     return Engine(_process_function)
@@ -44,6 +47,9 @@ class Simulation(object):
     loss_function: Callable  # For example, torch.nn.CrossEntropyLoss().
     batch_size: int
     _learning_rate: int
+    # The below lr scheduler is optional. Its step function will be called
+    # after every iteration, rather than every epoch.
+    lr_scheduler: _LRScheduler = None
     simulation_name: str = 'Simulation'
     custom_handlers: List[Callable] = None  # Functions of the form
     # simulation -> void
