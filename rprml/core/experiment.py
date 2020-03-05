@@ -5,7 +5,7 @@ from typing import List, Union
 import torch
 import torch.multiprocessing as multiprocessing
 
-from .simulation_factory import SimulationFactory
+from .simulation_factory import _SimulationFactoryBase
 from ..utils.hashable_dict import HashableDict
 from ..utils.io import save_to_disk
 
@@ -30,10 +30,10 @@ class Experiment(object):
     """
 
     def __init__(self, name: str,
-                 simulation_factories: List[SimulationFactory]):
+                 simulation_factories: List[_SimulationFactoryBase]):
         """
         :name: Name of the experiment.
-        :simulation_factories: A list of core.SimulationFactory objects.
+        :simulation_factories: A list of core._SimulationFactoryBase objects.
             This list defines the experiment as a collection of simulations
             to be performed.
         """

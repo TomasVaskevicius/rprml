@@ -17,7 +17,16 @@ _default_params_dict = {
 }
 
 
-class SimulationFactory(object):
+class _SimulationFactoryBase(object):
+
+    def __call__(self, seed: int, device: torch.device):
+        """ Makes the simulation factory callable. It can be used by objects of
+        type core.Experiment to perform runs of the same simulation with
+        different seeds and on different devices. """
+        raise NotImplementedError
+
+
+class SimulationFactory(_SimulationFactoryBase):
     """ A factory class for core.Simulation objects. Overriding this class
     allows for designing custom experiments and prototyping/executing using
     core.Experiment class. """
@@ -44,9 +53,6 @@ class SimulationFactory(object):
         return simulation
 
     def __call__(self, seed: int, device: torch.device):
-        """ Makes the simulation factory callable. It can be used by objects of
-        type core.Experiment to perform runs of the same simulation with
-        different seeds and on different devices. """
         params = copy.deepcopy(self.simulation_kwargs)
         params['seed'] = seed
         params['device'] = device
