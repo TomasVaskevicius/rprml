@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from typing import Callable
 from torch.utils.data.dataloader import DataLoader
 
@@ -31,6 +32,26 @@ class TransformedTensorDataset(TensorDataset):
         return TensorDataset(self.X[self.transformed_idx],
                              self.y[self.transformed_idx],
                              self.X.device)
+
+
+def randomize_labels_transform(dataset: TensorDataset, p):
+    """ A function for randomly resampling labels for a given fraction
+    of the dataset.
+
+    :dataset: A TensorDataset object.
+    :p: A fraction of the dataset for which labels should be resampled.
+    :returns: X, y, transformed_idx.
+    """
+    X, y = dataset.X, dataset.y
+    n = len(y)
+    n_resample = int(n * p)  # Number of data points to resample.
+    transform_idx = np.random.permutation(n)[:n_resample]
+    n_classes = len(torch.unique(y))
+    new_labels = np.random.randint(low=0, high=n_classes,
+                                   size=n_resample)
+    y[transform_idx] = torch.tensor(new_labels, device=y.device, dtype=y.dtype)
+
+    return X, y, transform_idx
 
 
 def register_metric_tracking_on_transformed_dataset(
