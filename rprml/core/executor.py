@@ -56,6 +56,8 @@ class _ExecutorBase(object):
         self._not_printable_metric_names = []  # Registered metrics for logging
         # only.
         self.__initialized = False
+        # Register the default handlers.
+        self._register_handlers()
 
     @property
     def log_frequency(self):
@@ -123,7 +125,6 @@ class _ExecutorBase(object):
         given number of epochs. """
 
         if not self.__initialized:
-            self._register_handlers()
             # Start logging metrics at initialization.
             self.simulation.trainer.fire_event(_iteration_level_event)
             self.__initialized = True
