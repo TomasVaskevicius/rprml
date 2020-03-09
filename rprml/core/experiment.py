@@ -10,9 +10,8 @@ from ..utils.hashable_dict import HashableDict
 from ..utils.io import save_to_disk
 
 
-def _job(simulation_factory, seed, device, log_frequency, epochs):
+def _job(simulation_factory, seed, device, epochs):
     simulation = simulation_factory(seed, device)
-    simulation.executor.log_frequency = log_frequency
     simulation.executor.print_frequency = -1  # Disable printing.
     simulation.run(epochs)
     return (simulation.executor.history, seed, device)
@@ -39,8 +38,6 @@ class Experiment(object):
         """
         self.name = name
         self.simulation_factories = simulation_factories
-        self.log_frequency = -1
-        self.print_frequency = 1
 
     def construct_simulation_identifier(self, simulation):
         """ Default implementation of simulation identifier. Simulation
@@ -91,8 +88,6 @@ class Experiment(object):
         for simulation_factory, epochs in zip(self.simulation_factories,
                                               cycle(epochs_per_simulation)):
             simulation = simulation_factory(seed, device)
-            simulation.executor.log_frequency = self.log_frequency
-            simulation.executor.print_frequency = self.print_frequency
             simulation.run(epochs)
             simulation_identifier = self.construct_simulation_identifier(
                 simulation)
@@ -129,7 +124,6 @@ class Experiment(object):
                         simulation_factory,
                         pool_id * n_runs_per_device + i,  # seed,
                         device,
-                        self.log_frequency,
                         epochs))
                 results.append(pool.starmap_async(_job, args))
 
