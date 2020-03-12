@@ -5,7 +5,8 @@ learning research.
 
 * [pytorch](https://pytorch.org/)
 * [torchvision](https://pytorch.org/)
-* [ignite](https://pytorch.org/ignite/)
+* [ignite 0.2.0](https://pytorch.org/ignite/) *Since 0.3.0 ignite introduces
+breaking changes incompatible with our code!*
 
 ## Code style
 
