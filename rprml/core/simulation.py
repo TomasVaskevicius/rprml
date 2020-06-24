@@ -137,10 +137,8 @@ class Simulation(object):
         # variables.
         self.__initialized = True
 
-    def run(self, epochs: int):
-        """ Runs the trainer for the given number of epochs. """
-        # Need to reset the data loaders, for example, if the
-        # batch size was changed, or if the dataset objects were modified.
+    def _reset_data_loaders(self):
+        """ Resets the data loader objects. """
         self.train_dl = DataLoader(self.train_dataset,
                                    batch_size=self.batch_size, shuffle=True)
         self.valid_dl = DataLoader(self.valid_dataset,
@@ -158,5 +156,10 @@ class Simulation(object):
                                       batch_size=test_batch_size,
                                       shuffle=False)
 
+    def run(self, epochs: int):
+        """ Runs the trainer for the given number of epochs. """
+        # Need to reset the data loaders, for example, if the
+        # batch size was changed, or if the dataset objects were modified.
+        self._reset_data_loaders()
         # Run the simulation.
         self.executor.run(epochs)
