@@ -128,6 +128,9 @@ class Simulation(object):
 
         self.executor = Executor(self)
 
+        # Set up the data loaders before registering custom handlers.
+        self._reset_data_loaders()
+
         # Call the custom handlers.
         if self.custom_handlers is not None:
             for handler in self.custom_handlers:
@@ -136,6 +139,7 @@ class Simulation(object):
         # Mark instance as initialized to prohibit changing certain instance
         # variables.
         self.__initialized = True
+
 
     def _reset_data_loaders(self):
         """ Resets the data loader objects. """
