@@ -140,7 +140,6 @@ class Simulation(object):
         # variables.
         self.__initialized = True
 
-
     def _reset_data_loaders(self):
         """ Resets the data loader objects. """
         self.train_dl = DataLoader(self.train_dataset,
