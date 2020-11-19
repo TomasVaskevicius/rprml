@@ -1,6 +1,7 @@
 from .core import *
 from .data import *
 from .models import *
+from .optimizers import *
 from .utils import *
 
 __all__ = []

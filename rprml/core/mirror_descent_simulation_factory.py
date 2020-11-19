@@ -1,7 +1,7 @@
 import torch
 
 from . import Simulation, SimulationFactory
-from ..models.linear_model import LinearModelFactory
+from ..models.linear import LinearModelFactory
 from ..optimizers.mirror_descent_optimizer import MirrorDescentOptimizer
 
 

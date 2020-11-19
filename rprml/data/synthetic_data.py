@@ -7,7 +7,7 @@ from .data_utils import TensorDataset
 default_dtype = torch.float32
 
 
-def __generate_synthetic_regression_dataset(X, noise_std, w_star, device):
+def generate_synthetic_regression_dataset(X, noise_std, w_star, device):
     """
     :X: A covariates matrix as a torch tensor.
     :noise_std: Standard deviation of Gaussian additive noise.
@@ -37,10 +37,11 @@ def __generate_synthetic_regression_dataset(X, noise_std, w_star, device):
     # Save the noise vector in the dataset object.
     setattr(dataset, 'xi', xi)
     setattr(dataset, 'w_star', w_star)
+    setattr(dataset, 'noise_std', noise_std)
     return dataset
 
 
-def __generate_multivariate_gaussian_covariates(n, d, covariance_matrix,
+def generate_multivariate_gaussian_covariates(n, d, covariance_matrix,
                                                 device):
     if covariance_matrix is None:
         # Assume identity covariance matrix.
@@ -71,15 +72,10 @@ def get_gaussian_datasets(n_train, n_valid, device=torch.device('cpu'),
     d = len(w_star)
     datasets = []
     for n in [n_train, n_valid]:
-        X = __generate_multivariate_gaussian_covariates(
+        X = generate_multivariate_gaussian_covariates(
             n, d, covariance_matrix, device)
-        datasets.append(__generate_synthetic_regression_dataset(
+        datasets.append(generate_synthetic_regression_dataset(
             X, noise_std, w_star, device))
         setattr(datasets[-1], 'covariance_matrix', covariance_matrix)
 
     return tuple(datasets)
-
-
-dataset_factory_methods.update({
-    'gaussian': get_gaussian_datasets,
-})
