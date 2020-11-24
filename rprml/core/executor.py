@@ -40,6 +40,7 @@ class _ExecutorBase(object):
         self.simulation = simulation
         self.simulation.trainer.register_events(_iteration_level_event)
         self._complete_iterations = 0
+
         @self.simulation.trainer.on(Events.ITERATION_COMPLETED)
         def call_custom_event_handler(engine):
             _iteration_level_event_handler(engine, self)
@@ -85,6 +86,7 @@ class _ExecutorBase(object):
         self._output_dict[name] = []
         self._n_log_pbars += 1
         self._printable_metric_names.append(name)
+
         @trainer.on(event)
         def compute_metric(engine):
             metric = handler(engine, self)
@@ -97,6 +99,7 @@ class _ExecutorBase(object):
         trainer = self.simulation.trainer
         self._output_dict[name] = []
         self._not_printable_metric_names.append(name)
+
         @trainer.on(event)
         def compute_metric(engine):
             metric = handler(engine, self)
@@ -115,6 +118,7 @@ class _ExecutorBase(object):
             if self.print_frequency != -1:
                 self.display_output_dict()
         # Update the output dict after the training ends.
+
         @self.simulation.trainer.on(Events.COMPLETED)
         def display_output_dict_on_end(engine):
             if self.print_frequency != -1:
@@ -298,6 +302,7 @@ class Executor(_ExecutorBase):
         self.register_printable_metric(_compute_iteration_handler, 'iter')
 
         self.register_printable_metric(_compute_epoch_handler, 'epoch')
+
         @self.simulation.trainer.on(Events.EPOCH_COMPLETED)
         def call_custom_event_handler(engine):
             self._output_dict['epoch'][-1] += 1
