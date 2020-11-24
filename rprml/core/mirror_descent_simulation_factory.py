@@ -1,6 +1,8 @@
 import torch
 
 from . import Simulation, SimulationFactory
+from .synthetic_data_event_handlers import \
+    log_linear_model_complexity_parameters
 from ..models.linear import LinearModelFactory
 from ..optimizers.mirror_descent_optimizer import MirrorDescentOptimizer
 
@@ -28,4 +30,6 @@ class MirrorDescentSimulationFactory(SimulationFactory):
             self.mirror_map, simulation.model.parameters(),
             lr=simulation.learning_rate,
             momentum=0, dampening=0, weight_decay=0, nesterov=False)
+        # Register complexity parameters logging.
+        log_linear_model_complexity_parameters(simulation)
         return simulation

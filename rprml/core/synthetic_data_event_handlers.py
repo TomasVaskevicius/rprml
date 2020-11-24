@@ -1,5 +1,3 @@
-from . import rprml_path  # noqa
-
 import torch
 
 from ..optimizers.mirror_descent_optimizer import MirrorDescentOptimizer
